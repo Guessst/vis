@@ -1,4 +1,5 @@
 # TODO: custom build of Raylib without audio functionality
+# TODO: build release
 
 CC := gcc
 

@@ -7,15 +7,17 @@ int main()
     // Initializations
     InitWindow(800, 600, "VIS");
     
-    ma_result result;
     ma_engine engine;
-    const char* song = "assets/megalovania.wav";
-    result = ma_engine_init(NULL, &engine);
-    if (result != MA_SUCCESS) {
-        printf("Failed to initialize audio engine.");
-        return -1;
+    { // init ma_engine
+        ma_result result;
+        result = ma_engine_init(NULL, &engine);
+        if (result != MA_SUCCESS) {
+            printf("Failed to initialize audio engine.");
+            return -1;
+        }
     }
-
+    
+    const char* song = "assets/Voxel Revolution.wav";
     // Main loop
     ma_engine_play_sound(&engine, song, NULL);
     
