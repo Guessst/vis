@@ -2,5 +2,10 @@
     "files.associations": {
         "raylib.h": "c",
         "miniaudio.h": "c",
+    },
+    "C_Cpp.files.exclude": {
+        "**/.vscode": true,
+        "**/.vs": true,
+        "**/miniaudio.h": true,
     }
 }

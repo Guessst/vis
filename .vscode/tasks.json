@@ -4,13 +4,11 @@
     {
       "label": "build",
       "type": "shell",
-      "command": "make",
-      "args": ["build"],
+      "command": "${workspaceFolder}/build.bat",
       "group": {
         "kind": "build",
         "isDefault": true
       },
-      "problemMatcher": ["$gcc"]
     }
   ]
 }
