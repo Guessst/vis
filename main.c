@@ -3,91 +3,88 @@
 #include <stdlib.h>
 #include "miniaudio.h"
 #include "raylib.h"
+#include "miniaudio.h"
+#include <stdio.h>
+#include <stdlib.h>
 
 void data_callback(ma_device *pDevice, void *pOutput, const void *pInput, ma_uint32 frameCount)
 {
-    ma_decoder *decoder = pDevice->pUserData;
-    ma_result r = ma_decoder_read_pcm_frames(decoder, pOutput, frameCount, NULL);
-    if (r != MA_SUCCESS)
-    {
-        exit(-1);
-    }
-
+    ma_audio_buffer_ref *bufferRef = (ma_audio_buffer_ref *)pDevice->pUserData;
+    ma_uint64 framesRead = ma_audio_buffer_ref_read_pcm_frames(bufferRef, pOutput, frameCount, false);
     (void)pInput;
+
+    if (framesRead < frameCount)
+    {
+        // Optional: loop or stop
+        ma_audio_buffer_ref_seek_to_pcm_frame(bufferRef, 0); // loop
+    }
 }
 
 int main(void)
 {
     const char *filename = "assets/Voxel Revolution.wav";
-
     ma_decoder decoder;
-    ma_decoder_config decoderConfig = ma_decoder_config_init(ma_format_s16, 2, 44100); // Example: float, stereo, 44.1kHz
-    ma_result result = ma_decoder_init_file(filename, &decoderConfig, &decoder);
+    ma_result result;
+
+    // First, decode WAV to raw PCM
+    result = ma_decoder_init_file(filename, NULL, &decoder);
     if (result != MA_SUCCESS)
     {
-        // Handle error
-        exit(-1);
+        printf("Failed to init decoder\n");
+        return -1;
     }
 
-    ma_uint64 totalFrames = 0;
+    ma_uint64 totalFrames;
     ma_decoder_get_length_in_pcm_frames(&decoder, &totalFrames);
 
-    // Allocate memory for the entire decoded audio
-    ma_int16 *pcmData = (ma_int16 *)malloc(totalFrames * decoderConfig.channels * sizeof(ma_int16));
+    size_t pcmDataSize = (size_t)(totalFrames * decoder.outputChannels * ma_get_bytes_per_sample(decoder.outputFormat));
+    void *pcmData = malloc(pcmDataSize);
     if (pcmData == NULL)
-    {
-        // Handle memory allocation error
-        exit(-1);
-    }
+        return -2;
 
-    ma_uint64 framesRead = 0;
+    ma_uint64 framesRead;
     result = ma_decoder_read_pcm_frames(&decoder, pcmData, totalFrames, &framesRead);
-    if (result != MA_SUCCESS || framesRead != totalFrames)
-    {
-        // Handle error or incomplete read
-        exit(-1);
-    }
-    ma_decoder_seek_to_pcm_frame(&decoder, 0);
+    if (result != MA_SUCCESS)
+        return -3;
 
-    // pcmData now contains the entire decoded audio in memory
+    ma_decoder_uninit(&decoder); // we no longer need it
 
-    /* Step 3: Init playback device */
-    ma_device device;
-    ma_device_config deviceConfig;
-    deviceConfig = ma_device_config_init(ma_device_type_playback);
+    // Now wrap the PCM data in a readable audio buffer
+    ma_audio_buffer_ref bufferRef;
+    ma_audio_buffer_ref_init(decoder.outputFormat, decoder.outputChannels, pcmData, totalFrames, &bufferRef);
+
+    // Init playback device
+    ma_device_config deviceConfig = ma_device_config_init(ma_device_type_playback);
     deviceConfig.playback.format = decoder.outputFormat;
     deviceConfig.playback.channels = decoder.outputChannels;
     deviceConfig.sampleRate = decoder.outputSampleRate;
     deviceConfig.dataCallback = data_callback;
-    deviceConfig.pUserData = &decoder;
+    deviceConfig.pUserData = &bufferRef;
 
+    ma_device device;
     result = ma_device_init(NULL, &deviceConfig, &device);
     if (result != MA_SUCCESS)
     {
         printf("Failed to init device\n");
-        ma_decoder_uninit(&decoder);
-        return -3;
+        return -4;
     }
 
-    /* Step 4: Start device */
     result = ma_device_start(&device);
     if (result != MA_SUCCESS)
     {
         printf("Failed to start device\n");
         ma_device_uninit(&device);
-        ma_decoder_uninit(&decoder);
-        return -4;
+        return -5;
     }
 
-    printf("Playing sound... Press Enter to quit.\n");
+    printf("Playing raw PCM data... Press Enter to quit.\n");
     getchar();
 
-    /* Cleanup */
     ma_device_uninit(&device);
-    ma_decoder_uninit(&decoder);
-
+    free(pcmData);
     return 0;
 }
+
 /*
 int main(void)
 {
