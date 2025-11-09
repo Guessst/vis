@@ -1,7 +1,6 @@
-:: put gcc and make in PATH
 @echo off
 set W64DEVKIT_X64_BIN_PATH=C:\progs\w64devkit-x64\bin
 set PATH=%W64DEVKIT_X64_BIN_PATH%;%PATH%
 
 make clean
-make build
+make KISSFFT_DATATYPE=int16_t KISSFFT_TOOLS=0 KISSFFT_TEST=0 KISSFFT_STATIC=1 all
