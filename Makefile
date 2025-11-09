@@ -9,7 +9,7 @@ RAYLIB_INCLUDE := $(RAYLIB_DIR)/include
 RAYLIB_LIB := $(RAYLIB_DIR)/lib
 
 ### MAIN PROGRAM VARS
-MAIN_CFLAGS := -std=c99 -Wall -Wextra -Werror -Wpedantic -Wshadow -Wconversion -Wsign-conversion -Wnull-dereference -g -O0
+MAIN_CFLAGS := -std=c99 -Wall -Wextra -Werror -Wpedantic -Wshadow -Wconversion -Wsign-conversion -Wnull-dereference -O0
 MAIN_INCLUDES := -I $(RAYLIB_INCLUDE)
 MAIN_LIBS := $(RAYLIB_LIB) -lraylib -lwinmm -lgdi32 -lopengl32 -luser32 -lkernel32
 
@@ -24,16 +24,17 @@ run: main.exe
 build: main.c miniaudio.o
 	$(CC) $(MAIN_CFLAGS) \
 	    -Wl,-subsystem,console \
+	    -g \
 	    miniaudio.o \
 	    $(MAIN_INCLUDES) \
 	    main.c \
-	    -o main.exe \
+		-o main.exe \
 	    -L $(RAYLIB_LIB) \
 	    -lraylib -lwinmm -lgdi32 -lopengl32 -luser32 -lkernel32
 
 
-build_miniaudio: miniaudio.c
-	$(CC) -c miniaudio.c -o miniaudio.o
+miniaudio.o: miniaudio.c
+	$(CC) -c -g miniaudio.c -o miniaudio.o
 
 clean:
 	rm -f *.exe *.o
