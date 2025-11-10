@@ -10,7 +10,6 @@ RAYLIB_LIB := $(RAYLIB_DIR)/lib
 
 ### MAIN PROGRAM VARS
 MAIN_CFLAGS := -std=c99 -Wall -Wextra -Werror -Wpedantic -Wshadow -Wconversion -Wsign-conversion -Wnull-dereference -O0
-MAIN_INCLUDES := -I $(RAYLIB_INCLUDE)
 MAIN_LIBS := $(RAYLIB_LIB) -lraylib -lwinmm -lgdi32 -lopengl32 -luser32 -lkernel32
 
 ### SOURCES
@@ -21,20 +20,25 @@ all: build run
 run: main.exe
 	./main.exe
 
-build: main.c miniaudio.o
+build: main.c miniaudio.o kissfft-131.2.0/libkissfft-int16_t.a
 	$(CC) $(MAIN_CFLAGS) \
 	    -Wl,-subsystem,console \
 	    -g \
 	    miniaudio.o \
-	    $(MAIN_INCLUDES) \
+	    -I $(RAYLIB_INCLUDE) \
+		-I ./kissfft-131.2.0 \
 	    main.c \
 		-o main.exe \
 	    -L $(RAYLIB_LIB) \
-	    -lraylib -lwinmm -lgdi32 -lopengl32 -luser32 -lkernel32
+		-L ./kissfft-131.2.0 \
+	    -lraylib -lwinmm -lgdi32 -lopengl32 -luser32 -lkernel32 -lkissfft-int16_t
 
+kissfft-131.2.0/libkissfft-int16_t.a:
+	make -C kissfft-131.2.0 KISSFFT_DATATYPE=int16_t KISSFFT_TOOLS=0 KISSFFT_TEST=0 KISSFFT_STATIC=1 all
 
 miniaudio.o: miniaudio.c
 	$(CC) -c -g miniaudio.c -o miniaudio.o
 
+
 clean:
-	rm -f *.exe *.o
+	rm -f *.exe *.o ./kissfft-131.2.0/*.o

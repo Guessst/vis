@@ -2,6 +2,8 @@
     "files.associations": {
         "raylib.h": "c",
         "miniaudio.h": "c",
+        "kiss_fft.h": "c",
+        "math.h": "c"
     },
     "C_Cpp.files.exclude": {
         "**/.vscode": true,

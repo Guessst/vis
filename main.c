@@ -1,11 +1,13 @@
 #include <stdio.h>
+#include <stdlib.h>
+#include <stdio.h>
 #include <string.h>
 #include <stdlib.h>
+#include <assert.h>
 #include "miniaudio.h"
 #include "raylib.h"
 #include "miniaudio.h"
-#include <stdio.h>
-#include <stdlib.h>
+#include "kiss_fft.h"
 
 void data_callback(ma_device *pDevice, void *pOutput, const void *pInput, ma_uint32 frameCount)
 {
@@ -17,6 +19,29 @@ void data_callback(ma_device *pDevice, void *pOutput, const void *pInput, ma_uin
     {
         // Optional: loop or stop
         ma_audio_buffer_ref_seek_to_pcm_frame(bufferRef, 0); // loop
+    }
+}
+
+void print_bin_fft(ma_uint16* samples, kiss_fft_cfg* cfg, kiss_fft_cpx* in, kiss_fft_cpx* out, size_t n)
+{
+    bool is_power_2 = (n & (n - 1)) == 0 && n > 0;
+    assert(is_power_2);
+    
+    // Convert samples to complex input (real + imaginary=0)
+    for (size_t i = 0; i < n; ++i)
+    {
+        in[i].r = (kiss_fft_scalar)samples[i];
+        in[i].i = 0;
+    }
+
+    // Run FFT
+    kiss_fft(*cfg, in, out);
+
+    // Compute magnitude and print first 10 bins
+    for (int i = 0; i < 10; i++)
+    {
+        float mag = sqrtf(out[i].r * out[i].r + out[i].i * out[i].i);
+        printf("Bin %d: %.2f\n", i, mag);
     }
 }
 
@@ -69,7 +94,8 @@ int main(void)
         return -4;
     }
 
-    result = ma_device_start(&device);
+    // result = ma_device_start(&device);
+    result = MA_SUCCESS;
     if (result != MA_SUCCESS)
     {
         printf("Failed to start device\n");
@@ -77,8 +103,22 @@ int main(void)
         return -5;
     }
 
-    printf("Playing raw PCM data... Press Enter to quit.\n");
-    getchar();
+    // FFT
+    kiss_fft_cfg cfg = kiss_fft_alloc(1024, 0, NULL, NULL);
+    if (!cfg)
+    {
+        fprintf(stderr, "Failed to allocate KissFFT config\n");
+        return 1;
+    }
+    
+    size_t n = 1024;
+    kiss_fft_cpx in[n];
+    kiss_fft_cpx out[n];
+
+    print_bin_fft(pcmData, &cfg, in, out, n);
+
+    // printf("Playing raw PCM data... Press Enter to quit.\n");
+    // getchar();
 
     ma_device_uninit(&device);
     free(pcmData);
